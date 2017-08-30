@@ -1,9 +1,12 @@
 package com.palvision.aprange;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.ButtonBarLayout;
@@ -16,8 +19,10 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     Button test;
-    TextView displayMessage;
+    TextView displayMessage, displaySSID, displayLevel;
     Context context;
+
+    Boolean b;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,8 +31,66 @@ public class MainActivity extends AppCompatActivity {
 
         context = getApplicationContext();
 
-        initUI();
-        getWifiMessage();
+        final Handler handler = new Handler();
+
+        final Runnable r = new Runnable() {
+            public void run() {
+                b = isOnline();
+                System.out.println(b);
+
+                initUI();
+
+                handler.postDelayed(this, 1000);
+            }
+        };
+
+        handler.postDelayed(r, 1000);
+
+    }
+    public void initUI() {
+        test = (Button) findViewById(R.id.btn_main_test);
+        displayMessage = (TextView) findViewById(R.id.tv_main_display);
+        displaySSID = (TextView) findViewById(R.id.tv_main_ssid);
+        displayLevel = (TextView) findViewById(R.id.tv_main_level);
+
+
+        showSSID();
+
+
+        test.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getWifiMessage();
+            }
+        });
+    }
+
+    public void showSSID() {
+        WifiConfiguration wifiConfig = new WifiConfiguration();
+
+        wifiConfig.SSID = String.format("\"%s\"", "PAL");
+        wifiConfig.preSharedKey = String.format("\"%s\"", "P@l12345");
+
+        WifiManager wifiManager=(WifiManager)getSystemService(WIFI_SERVICE);
+        int netId = wifiManager.addNetwork(wifiConfig);
+        wifiManager.disconnect();
+        wifiManager.enableNetwork(netId, true);
+        wifiManager.reconnect();
+
+        System.out.println(wifiConfig.status);
+
+        System.out.println(wifiManager.getConnectionInfo());
+
+        System.out.println(wifiManager.EXTRA_PREVIOUS_WIFI_STATE);
+
+        // Level of current connection
+        int rssi = wifiManager.getConnectionInfo().getRssi();
+        int level = WifiManager.calculateSignalLevel(rssi, 5);
+        System.out.println("Level is " + level + " out of 5");
+
+
+        displaySSID.setText(wifiConfig.SSID);
+        displayLevel.setText(new String(String.valueOf(level)));
     }
 
     public void getWifiMessage() {
@@ -62,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
                 level = WifiManager.calculateSignalLevel(rssi, 5);
                 System.out.println("Level is " + level + " out of 5");
 
-                if ((level > 0) && (level <= 1)) {
+                if ((level > 0) && (level <= 2)) {
 
                  rssi = wifiManager.getConnectionInfo().getRssi();
                 level = WifiManager.calculateSignalLevel(rssi, 5);
@@ -70,7 +133,12 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "This is Level = " + level,
                         Toast.LENGTH_LONG).show();
 
-                displayMessage.setText("Please leave phone on bed");
+                    Toast.makeText(getApplicationContext(), "This is Level = " + b,
+                            Toast.LENGTH_LONG).show();
+
+                    displayMessage.setText("Please leave phone on bed");
+                    displaySSID.setText(wifiConfig.SSID);
+                    displayLevel.setText(new String(String.valueOf(level)));
 
                 break;
             }
@@ -79,9 +147,13 @@ public class MainActivity extends AppCompatActivity {
             }
     }
 
-    public void initUI() {
-        test = (Button) findViewById(R.id.btn_main_test);
-        displayMessage = (TextView) findViewById(R.id.tv_main_display);
+
+
+    public boolean isOnline() {
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        return (networkInfo != null && networkInfo.isConnected());
     }
 
 }
