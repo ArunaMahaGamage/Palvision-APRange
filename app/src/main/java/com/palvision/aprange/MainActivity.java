@@ -15,11 +15,23 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+
+import org.json.JSONObject;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     Button test;
-    TextView displayMessage, displaySSID, displayLevel;
+    TextView displayMessage, displaySSID, displayLevel, httpResponse;
     Context context;
 
     Boolean b;
@@ -52,10 +64,11 @@ public class MainActivity extends AppCompatActivity {
         displayMessage = (TextView) findViewById(R.id.tv_main_display);
         displaySSID = (TextView) findViewById(R.id.tv_main_ssid);
         displayLevel = (TextView) findViewById(R.id.tv_main_level);
+        httpResponse = (TextView) findViewById(R.id.tv_main_httprespone);
 
 
         showSSID();
-
+        testRequest();
 
         test.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -154,6 +167,30 @@ public class MainActivity extends AppCompatActivity {
                 getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
         return (networkInfo != null && networkInfo.isConnected());
+    }
+
+    public void testRequest() {
+        String url = "http://my-json-feed";
+
+        JsonObjectRequest jsObjRequest = new JsonObjectRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        httpResponse.setText("Response: " + response.toString());
+                    }
+                }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // TODO Auto-generated method stub
+                        httpResponse.setText("Response: " + error.toString());
+
+                    }
+                });
+
+// Access the RequestQueue through your singleton class.
+        MySingleton.getInstance(this).addToRequestQueue(jsObjRequest);
     }
 
 }
